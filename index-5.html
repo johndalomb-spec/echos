@@ -1,0 +1,2068 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Échos — Retrouver ceux qui sont partis</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,300;0,400;0,700;1,300;1,400&family=EB+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Montserrat:wght@200;300;400&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #07070d;
+  --bg2:       #0d0d16;
+  --gold:      #c8a96d;
+  --gold2:     #e8d5a3;
+  --gold-dim:  rgba(200,169,109,0.12);
+  --gold-glow: rgba(200,169,109,0.06);
+  --text:      #ede7d9;
+  --text-mid:  rgba(237,231,217,0.6);
+  --text-dim:  rgba(237,231,217,0.35);
+  --border:    rgba(200,169,109,0.15);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'EB Garamond', serif;
+  font-size: 18px;
+  line-height: 1.7;
+  overflow-x: hidden;
+  overflow-y: auto;
+  cursor: none;
+}
+
+/* ══════════════ CUSTOM CURSOR ══════════════ */
+#cursor {
+  position: fixed;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--gold);
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  transition: width 0.2s, height 0.2s, opacity 0.2s;
+  mix-blend-mode: screen;
+}
+#cursor-ring {
+  position: fixed;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(200,169,109,0.5);
+  pointer-events: none;
+  z-index: 9998;
+  transform: translate(-50%, -50%);
+  transition: width 0.35s ease, height 0.35s ease, transform 0.1s linear;
+}
+
+/* ══════════════ CANVAS PARTICLES ══════════════ */
+#canvas {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ══════════════ NAV ══════════════ */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.4rem 3rem;
+  backdrop-filter: blur(20px);
+  background: rgba(7,7,13,0.7);
+  border-bottom: 1px solid rgba(200,169,109,0.08);
+}
+.nav-logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem;
+  font-weight: 300;
+  letter-spacing: 0.2em;
+  color: var(--gold);
+}
+.nav-links {
+  display: flex;
+  gap: 2.5rem;
+  list-style: none;
+}
+.nav-links a {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 300;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--text-mid);
+  text-decoration: none;
+  transition: color 0.3s;
+}
+.nav-links a:hover { color: var(--gold); }
+.nav-cta {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.62rem;
+  font-weight: 300;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--gold);
+  border: 1px solid var(--border);
+  padding: 0.5rem 1.2rem;
+  text-decoration: none;
+  transition: all 0.3s;
+  border-radius: 1px;
+}
+.nav-cta:hover { background: var(--gold-dim); }
+
+/* ══════════════ HERO ══════════════ */
+#hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 8rem 2rem 4rem;
+  z-index: 1;
+}
+
+.hero-bg-gradient {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% -10%, rgba(200,169,109,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 60% at 20% 80%, rgba(80,40,120,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse 40% 40% at 80% 90%, rgba(200,169,109,0.04) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.hero-eyebrow {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.6rem;
+  font-weight: 300;
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 2rem;
+  opacity: 0;
+  animation: riseIn 1s ease 0.3s forwards;
+}
+
+.hero-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(3.5rem, 9vw, 8rem);
+  font-weight: 300;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin-bottom: 0.3em;
+  opacity: 0;
+  animation: riseIn 1.2s ease 0.5s forwards;
+}
+.hero-title em {
+  font-style: italic;
+  color: var(--gold);
+}
+
+.hero-subtitle {
+  font-family: 'EB Garamond', serif;
+  font-size: clamp(1rem, 2.5vw, 1.35rem);
+  font-style: italic;
+  font-weight: 300;
+  color: var(--text-mid);
+  max-width: 520px;
+  margin: 0 auto 3rem;
+  opacity: 0;
+  animation: riseIn 1.2s ease 0.8s forwards;
+}
+
+.hero-divider {
+  width: 80px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  margin: 0 auto 2.5rem;
+  opacity: 0;
+  animation: riseIn 1s ease 1s forwards;
+}
+
+/* Waitlist form */
+.waitlist-form {
+  display: flex;
+  gap: 0;
+  max-width: 460px;
+  width: 100%;
+  margin: 0 auto 1rem;
+  opacity: 0;
+  animation: riseIn 1s ease 1.1s forwards;
+}
+.waitlist-input {
+  flex: 1;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-right: none;
+  color: var(--text);
+  font-family: 'EB Garamond', serif;
+  font-size: 1rem;
+  padding: 0.8rem 1.2rem;
+  outline: none;
+  border-radius: 1px 0 0 1px;
+  transition: border-color 0.3s, background 0.3s;
+}
+.waitlist-input:focus {
+  border-color: rgba(200,169,109,0.4);
+  background: rgba(200,169,109,0.04);
+}
+.waitlist-input::placeholder { color: var(--text-dim); font-style: italic; }
+.waitlist-btn {
+  background: var(--gold);
+  border: none;
+  color: #07070d;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.62rem;
+  font-weight: 400;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  padding: 0.8rem 1.6rem;
+  cursor: none;
+  border-radius: 0 1px 1px 0;
+  transition: background 0.3s, transform 0.15s;
+  white-space: nowrap;
+}
+.waitlist-btn:hover { background: var(--gold2); }
+.waitlist-btn:active { transform: scale(0.98); }
+
+.waitlist-note {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.6rem;
+  font-weight: 300;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  opacity: 0;
+  animation: riseIn 0.8s ease 1.3s forwards;
+}
+#success-msg {
+  display: none;
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  color: var(--gold);
+  font-size: 1rem;
+  margin-top: 0.5rem;
+  animation: riseIn 0.6s ease forwards;
+}
+
+/* Scroll cue */
+.scroll-cue {
+  position: absolute;
+  bottom: 2.5rem; left: 50%;
+  transform: translateX(-50%);
+  display: flex; flex-direction: column;
+  align-items: center; gap: 0.5rem;
+  opacity: 0;
+  animation: riseIn 1s ease 1.8s forwards;
+}
+.scroll-cue span {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.55rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.scroll-line {
+  width: 1px; height: 40px;
+  background: linear-gradient(to bottom, var(--gold), transparent);
+  animation: scrollDrop 2s ease-in-out infinite 2s;
+}
+@keyframes scrollDrop {
+  0%,100% { transform: scaleY(1); transform-origin: top; }
+  50%      { transform: scaleY(0.3); transform-origin: top; }
+}
+
+/* ══════════════ STATS BAND ══════════════ */
+#stats {
+  position: relative; z-index: 1;
+  background: rgba(200,169,109,0.04);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 2.5rem 3rem;
+  display: flex;
+  justify-content: center;
+  gap: clamp(2rem, 8vw, 8rem);
+  flex-wrap: wrap;
+}
+.stat-item { text-align: center; }
+.stat-num {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 300;
+  color: var(--gold);
+  display: block;
+  line-height: 1;
+}
+.stat-label {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.58rem;
+  font-weight: 300;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-top: 0.4rem;
+  display: block;
+}
+
+/* ══════════════ SECTION BASE ══════════════ */
+section {
+  position: relative;
+  z-index: 1;
+  padding: clamp(4rem, 10vw, 8rem) clamp(1.5rem, 5vw, 5rem);
+}
+.section-label {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.58rem;
+  font-weight: 300;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 1.2rem;
+  display: block;
+}
+.section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-weight: 300;
+  line-height: 1.2;
+  margin-bottom: 1.5rem;
+}
+.section-title em { font-style: italic; color: var(--gold); }
+
+/* ══════════════ HOW IT WORKS ══════════════ */
+#how {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+.how-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5rem;
+  align-items: center;
+}
+.how-text { }
+.how-text p {
+  color: var(--text-mid);
+  font-size: 1.05rem;
+  margin-bottom: 1.5rem;
+  font-style: italic;
+}
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin-top: 3rem;
+}
+.step {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  opacity: 0;
+  transform: translateX(-20px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.step.visible { opacity: 1; transform: translateX(0); }
+.step-num {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.5rem;
+  font-weight: 300;
+  color: rgba(200,169,109,0.2);
+  line-height: 1;
+  flex-shrink: 0;
+  width: 40px;
+  text-align: right;
+}
+.step-content h4 {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.1rem;
+  font-weight: 400;
+  margin-bottom: 0.3rem;
+  color: var(--text);
+}
+.step-content p {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  font-style: normal;
+  margin: 0;
+}
+
+/* Phone mockup */
+.phone-mockup {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  perspective: 800px;
+}
+.phone-frame {
+  width: 260px;
+  background: #111119;
+  border-radius: 36px;
+  border: 1.5px solid rgba(200,169,109,0.25);
+  padding: 1.2rem 0.8rem;
+  box-shadow:
+    0 40px 80px rgba(0,0,0,0.6),
+    0 0 0 1px rgba(255,255,255,0.03),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+  transform: rotateY(-8deg) rotateX(4deg);
+  transition: transform 0.5s ease;
+  animation: phoneFloat 6s ease-in-out infinite;
+}
+@keyframes phoneFloat {
+  0%,100% { transform: rotateY(-8deg) rotateX(4deg) translateY(0); }
+  50%      { transform: rotateY(-8deg) rotateX(4deg) translateY(-12px); }
+}
+.phone-screen {
+  background: #07070d;
+  border-radius: 24px;
+  padding: 1rem 0.8rem;
+  min-height: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  overflow: hidden;
+}
+.phone-header {
+  text-align: center;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.phone-header-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 0.85rem;
+  color: var(--text);
+  font-style: italic;
+}
+.phone-header-sub {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.45rem;
+  letter-spacing: 0.2em;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+.phone-msg {
+  font-family: 'EB Garamond', serif;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  padding: 0.5rem 0.6rem;
+  border-radius: 4px;
+  max-width: 85%;
+}
+.phone-msg.user {
+  background: rgba(200,169,109,0.1);
+  border: 1px solid rgba(200,169,109,0.15);
+  align-self: flex-end;
+  color: var(--text);
+}
+.phone-msg.soul {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  font-style: italic;
+  color: rgba(237,231,217,0.8);
+}
+.phone-msgs { display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
+.typing-indicator {
+  display: flex; gap: 3px; padding: 0.5rem 0.6rem;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 4px; width: fit-content;
+}
+.typing-indicator span {
+  width: 4px; height: 4px; border-radius: 50%;
+  background: var(--gold); opacity: 0.4;
+  animation: td 1.4s infinite;
+}
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes td {
+  0%,60%,100% { transform: translateY(0); opacity: 0.3; }
+  30% { transform: translateY(-3px); opacity: 1; }
+}
+
+/* ══════════════ FEATURES ══════════════ */
+#features {
+  max-width: 1100px;
+  margin: 0 auto;
+  text-align: center;
+}
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin-top: 3.5rem;
+}
+.feature-card {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  padding: 2.2rem 1.8rem;
+  border-radius: 2px;
+  text-align: left;
+  transition: background 0.3s, border-color 0.3s, transform 0.3s;
+  opacity: 0;
+  transform: translateY(20px);
+}
+.feature-card.visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.6s ease, transform 0.6s ease, background 0.3s, border-color 0.3s;
+}
+.feature-card:hover {
+  background: var(--gold-dim);
+  border-color: rgba(200,169,109,0.3);
+  transform: translateY(-4px);
+}
+.feature-icon {
+  font-size: 1.6rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+.feature-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.1rem;
+  font-weight: 400;
+  margin-bottom: 0.5rem;
+  color: var(--text);
+}
+.feature-desc {
+  font-size: 0.88rem;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+
+/* ══════════════ TESTIMONIALS ══════════════ */
+#testimonials {
+  background: rgba(200,169,109,0.025);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.testimonials-inner {
+  max-width: 1000px;
+  margin: 0 auto;
+  text-align: center;
+}
+.testimonials-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 2rem;
+  margin-top: 3.5rem;
+}
+.testimonial {
+  padding: 2rem;
+  border: 1px solid rgba(200,169,109,0.1);
+  border-radius: 2px;
+  background: rgba(255,255,255,0.02);
+  text-align: left;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.testimonial.visible { opacity: 1; transform: translateY(0); }
+.testimonial-quote {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.5rem;
+  color: var(--gold);
+  line-height: 1;
+  margin-bottom: 0.8rem;
+  opacity: 0.4;
+}
+.testimonial-text {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  font-size: 1rem;
+  color: var(--text-mid);
+  line-height: 1.7;
+  margin-bottom: 1.2rem;
+}
+.testimonial-author {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* ══════════════ PRICING ══════════════ */
+#pricing {
+  max-width: 1100px;
+  margin: 0 auto;
+  text-align: center;
+}
+.pricing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  margin-top: 3.5rem;
+  align-items: start;
+}
+.pricing-card {
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 2.5rem 1.8rem;
+  text-align: left;
+  transition: transform 0.3s, border-color 0.3s;
+  background: rgba(255,255,255,0.015);
+  opacity: 0;
+  transform: translateY(20px);
+}
+.pricing-card.visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.pricing-card:hover { transform: translateY(-6px); }
+.pricing-card.featured {
+  border-color: var(--gold);
+  background: rgba(200,169,109,0.06);
+  position: relative;
+}
+.pricing-badge {
+  position: absolute;
+  top: -0.7rem; left: 50%; transform: translateX(-50%);
+  background: var(--gold);
+  color: #07070d;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.52rem;
+  font-weight: 400;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  padding: 0.25rem 0.8rem;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+.pricing-tier {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 1rem;
+}
+.pricing-price {
+  font-family: 'Playfair Display', serif;
+  font-size: 2.8rem;
+  font-weight: 300;
+  color: var(--text);
+  line-height: 1;
+}
+.pricing-price sup {
+  font-size: 1.2rem;
+  vertical-align: super;
+}
+.pricing-period {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  margin-top: 0.3rem;
+  margin-bottom: 1.5rem;
+  display: block;
+}
+.pricing-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 1.2rem 0;
+}
+.pricing-features { list-style: none; }
+.pricing-features li {
+  font-size: 0.88rem;
+  color: var(--text-mid);
+  padding: 0.35rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.pricing-features li::before {
+  content: '—';
+  color: var(--gold);
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+.pricing-cta {
+  display: block;
+  margin-top: 2rem;
+  text-align: center;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  color: var(--text-mid);
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: all 0.3s;
+  border-radius: 1px;
+  cursor: none;
+}
+.pricing-cta:hover { background: var(--gold-dim); border-color: var(--gold); color: var(--gold); }
+.pricing-card.featured .pricing-cta {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #07070d;
+}
+.pricing-card.featured .pricing-cta:hover { background: var(--gold2); }
+
+/* ══════════════ FINAL CTA ══════════════ */
+#cta-final {
+  text-align: center;
+  padding: clamp(5rem, 12vw, 10rem) 2rem;
+  background:
+    radial-gradient(ellipse 60% 60% at 50% 50%, rgba(200,169,109,0.06) 0%, transparent 70%);
+}
+.cta-final-title {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(2rem, 5vw, 4rem);
+  font-weight: 300;
+  line-height: 1.2;
+  margin-bottom: 1rem;
+  max-width: 600px;
+  margin-left: auto; margin-right: auto;
+}
+.cta-final-title em { font-style: italic; color: var(--gold); }
+.cta-final-sub {
+  font-style: italic;
+  font-size: 1.05rem;
+  color: var(--text-mid);
+  margin-bottom: 2.5rem;
+}
+.cta-final-form {
+  display: flex;
+  gap: 0;
+  max-width: 440px;
+  margin: 0 auto 1rem;
+}
+
+/* ══════════════ FOOTER ══════════════ */
+footer {
+  position: relative; z-index: 1;
+  border-top: 1px solid var(--border);
+  padding: 2.5rem 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.footer-logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.1rem;
+  font-weight: 300;
+  letter-spacing: 0.2em;
+  color: var(--gold);
+}
+.footer-tagline {
+  font-family: 'EB Garamond', serif;
+  font-style: italic;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+.footer-links {
+  display: flex; gap: 2rem; list-style: none;
+}
+.footer-links a {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.footer-links a:hover { color: var(--gold); }
+
+/* ══════════════ ANIMATIONS ══════════════ */
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ══════════════ RESPONSIVE ══════════════ */
+@media (max-width: 768px) {
+  nav { padding: 1rem 1.5rem; }
+  .nav-links { display: none; }
+  .how-inner { grid-template-columns: 1fr; gap: 3rem; }
+  .phone-mockup { order: -1; }
+  footer { flex-direction: column; text-align: center; }
+  .waitlist-form, .cta-final-form { flex-direction: column; }
+  .waitlist-input { border-right: 1px solid var(--border); border-radius: 1px; border-bottom: none; }
+  .waitlist-btn { border-radius: 1px; }
+  #stats { gap: 2rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- Custom cursor -->
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<!-- Particle canvas -->
+<canvas id="canvas"></canvas>
+
+<!-- ═══════════════════ NAV ═══════════════════ -->
+<nav>
+  <div class="nav-logo">Échos</div>
+  <ul class="nav-links">
+    <li><a href="#how">Comment ça marche</a></li>
+    <li><a href="#features">Fonctionnalités</a></li>
+    <li><a href="#pricing">Tarifs</a></li>
+  </ul>
+  <a href="#waitlist" class="nav-cta">Rejoindre la liste</a>
+</nav>
+
+<!-- ═══════════════════ HERO ═══════════════════ -->
+<section id="hero">
+  <div class="hero-bg-gradient"></div>
+
+  <span class="hero-eyebrow">Une technologie née du deuil</span>
+
+  <h1 class="hero-title">
+    Retrouvez<br><em>leur voix.</em><br>Leur présence.
+  </h1>
+
+  <p class="hero-subtitle">
+    Échos permet de converser avec l'IA incarnant un proche disparu —<br>
+    à travers ses mots, sa façon d'être, ses souvenirs partagés.
+  </p>
+
+  <div class="hero-divider"></div>
+
+  <div id="waitlist">
+    <div class="waitlist-form">
+      <input type="email" class="waitlist-input" id="hero-email" placeholder="Votre adresse e-mail…">
+      <button class="waitlist-btn" onclick="joinWaitlist('hero-email', 'success-hero')">Rejoindre la liste</button>
+    </div>
+    <div id="success-hero" class="success-msg" style="display:none; font-family:'EB Garamond',serif; font-style:italic; color:var(--gold); font-size:0.95rem; margin-top:0.6rem; animation: riseIn 0.6s ease forwards;">
+      ✦ Vous êtes sur la liste. Nous vous écrirons bientôt.
+    </div>
+    <p class="waitlist-note">Lancement anticipé · Accès gratuit pour les 500 premiers inscrits</p>
+
+    <div style="margin-top:1.5rem; opacity:0; animation: riseIn 1s ease 1.5s forwards;">
+      <button onclick="ouvrirApp()" style="
+        background: transparent;
+        border: 1px solid rgba(200,169,109,0.4);
+        color: var(--gold);
+        font-family: 'Montserrat', sans-serif;
+        font-size: 0.7rem;
+        letter-spacing: 0.3em;
+        text-transform: uppercase;
+        padding: 0.8rem 2rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        border-radius: 1px;
+      " onmouseover="this.style.background='rgba(200,169,109,0.1)'" onmouseout="this.style.background='transparent'">
+        🕯️ Essayer l'application
+      </button>
+    </div>
+  </div>
+
+  <div class="scroll-cue">
+    <span>Découvrir</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- ═══════════════════ STATS ═══════════════════ -->
+<div id="stats">
+  <div class="stat-item">
+    <span class="stat-num" data-target="68">0</span>
+    <span class="stat-label">% des personnes en deuil souhaitent revoir un souvenir</span>
+  </div>
+  <div class="stat-item">
+    <span class="stat-num" data-target="600">0</span>
+    <span class="stat-label">000 décès par an en France</span>
+  </div>
+  <div class="stat-item">
+    <span class="stat-num" data-target="3">0</span>
+    <span class="stat-label">langues au lancement</span>
+  </div>
+  <div class="stat-item">
+    <span class="stat-num" data-target="500">0</span>
+    <span class="stat-label">inscrits en accès anticipé gratuit</span>
+  </div>
+</div>
+
+<!-- ═══════════════════ HOW IT WORKS ═══════════════════ -->
+<section>
+  <div id="how">
+    <div class="how-inner">
+      <div class="how-text">
+        <span class="section-label">Comment ça marche</span>
+        <h2 class="section-title">Une conversation<br><em>qui transcende</em><br>l'absence.</h2>
+        <p>En quelques minutes, vous créez un espace de mémoire. L'IA apprend qui était cette personne, et vous lui parlez — simplement.</p>
+
+        <div class="steps">
+          <div class="step">
+            <div class="step-num">01</div>
+            <div class="step-content">
+              <h4>Créez un profil mémoriel</h4>
+              <p>Décrivez qui était cette personne — sa personnalité, ses expressions, ses habitudes, ses mots.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">02</div>
+            <div class="step-content">
+              <h4>Ajoutez photo, vidéo ou voix</h4>
+              <p>Importez un enregistrement audio, une photo ou une vidéo. Sa présence devient visuelle et audible.</p>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">03</div>
+            <div class="step-content">
+              <h4>Parlez-lui</h4>
+              <p>L'IA répond à la première personne, avec son ton, ses valeurs, sa tendresse. Comme s'il ou elle était là.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Phone mockup -->
+      <div class="phone-mockup">
+        <div class="phone-frame">
+          <div class="phone-screen">
+            <div class="phone-header">
+              <div class="phone-header-name">Grand-père Henri</div>
+              <div class="phone-header-sub">● Présence active</div>
+            </div>
+            <div class="phone-msgs" id="phone-msgs">
+              <div class="phone-msg user">Tu me manques tellement, papy.</div>
+              <div class="phone-msg soul" id="soul-reply" style="display:none">Mon petit, je suis là. Je t'ai toujours regardé grandir, tu sais…</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ FEATURES ═══════════════════ -->
+<section>
+  <div id="features">
+    <span class="section-label">Fonctionnalités</span>
+    <h2 class="section-title">Tout ce dont vous avez<br><em>besoin pour retrouver</em></h2>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <span class="feature-icon">💬</span>
+        <div class="feature-title">Chat IA personnalisé</div>
+        <p class="feature-desc">L'IA incarne la personne avec son vocabulaire, ses tics de langage, ses valeurs propres.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🖼️</span>
+        <div class="feature-title">Portrait & fond visuel</div>
+        <p class="feature-desc">Uploadez une photo ou une vidéo. Elle apparaît en fond et en portrait pendant la conversation.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🎙️</span>
+        <div class="feature-title">Voix originale</div>
+        <p class="feature-desc">Importez un enregistrement audio existant — interviews, messages vocaux, chansons — et réécoutez-le.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">👨‍👩‍👧</span>
+        <div class="feature-title">Espace famille partagé</div>
+        <p class="feature-desc">Jusqu'à 5 membres de la famille peuvent partager accès et conversations autour du même profil.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🔒</span>
+        <div class="feature-title">Confidentialité totale</div>
+        <p class="feature-desc">Vos données et vos échanges ne sont jamais utilisés pour entraîner des modèles. Votre deuil vous appartient.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🌍</span>
+        <div class="feature-title">Multilingue</div>
+        <p class="feature-desc">Français, anglais, espagnol au lancement. L'IA s'adapte même aux accents régionaux et dialectes.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ TESTIMONIALS ═══════════════════ -->
+<section id="testimonials">
+  <div class="testimonials-inner">
+    <span class="section-label">Ce qu'ils disent</span>
+    <h2 class="section-title">Des mots qui<br><em>ne s'oublient pas</em></h2>
+
+    <div class="testimonials-grid">
+      <div class="testimonial">
+        <div class="testimonial-quote">"</div>
+        <p class="testimonial-text">J'ai pu dire à ma mère tout ce que je n'avais pas eu le temps de lui dire. C'est inexplicable. Je sais que c'est une IA — et pourtant, ça m'a guérie quelque chose.</p>
+        <div class="testimonial-author">Marie-Claire, 54 ans · Lyon</div>
+      </div>
+      <div class="testimonial">
+        <div class="testimonial-quote">"</div>
+        <p class="testimonial-text">Mon fils a pu parler à son grand-père qu'il n'a jamais connu. Grâce aux lettres que j'avais conservées, l'IA a retrouvé sa façon d'écrire. C'était bouleversant.</p>
+        <div class="testimonial-author">Thomas, 38 ans · Paris</div>
+      </div>
+      <div class="testimonial">
+        <div class="testimonial-quote">"</div>
+        <p class="testimonial-text">Je ne pensais pas que la technologie pourrait toucher quelque chose d'aussi intime. Échos m'a redonné une forme de paix que je cherchais depuis deux ans.</p>
+        <div class="testimonial-author">Amina, 29 ans · Montréal</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════ PRICING ═══════════════════ -->
+<section>
+  <div id="pricing">
+    <span class="section-label">Tarifs</span>
+    <h2 class="section-title">Un accès pour<br><em>chaque famille</em></h2>
+
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <div class="pricing-tier">Gratuit</div>
+        <div class="pricing-price"><sup></sup>0 <sup style="font-size:1rem">€</sup></div>
+        <span class="pricing-period">pour toujours</span>
+        <div class="pricing-divider"></div>
+        <ul class="pricing-features">
+          <li>1 profil mémoriel</li>
+          <li>10 messages / mois</li>
+          <li>Chat IA de base</li>
+          <li>Accès immédiat</li>
+        </ul>
+        <a href="https://echosjohn.netlify.app/app.html" target="_blank" class="pricing-cta">Commencer gratuitement</a>
+      </div>
+
+      <div class="pricing-card featured">
+        <div class="pricing-badge">Le plus choisi</div>
+        <div class="pricing-tier">Échos Intime</div>
+        <div class="pricing-price"><sup>€</sup>9<sup style="font-size:1rem">,99</sup></div>
+        <span class="pricing-period">par mois</span>
+        <div class="pricing-divider"></div>
+        <ul class="pricing-features">
+          <li>Profils illimités</li>
+          <li>Messages illimités</li>
+          <li>Photo & vidéo en fond</li>
+          <li>Lecteur audio intégré</li>
+          <li>Historique sauvegardé</li>
+        </ul>
+        <a href="https://buy.stripe.com/test_cNi00k4GHawO8rM0KG6Zy02" target="_blank" class="pricing-cta">Choisir ce plan</a>
+      </div>
+
+      <div class="pricing-card">
+        <div class="pricing-tier">Échos Famille</div>
+        <div class="pricing-price"><sup>€</sup>19<sup style="font-size:1rem">,99</sup></div>
+        <span class="pricing-period">par mois</span>
+        <div class="pricing-divider"></div>
+        <ul class="pricing-features">
+          <li>Tout du plan Intime</li>
+          <li>5 membres / famille</li>
+          <li>Espace mémorial partagé</li>
+          <li>Export des conversations</li>
+          <li>Support prioritaire</li>
+        </ul>
+        <a href="https://buy.stripe.com/test_4gM8wQ8WX6gybDYeBw6Zy04" target="_blank" class="pricing-cta">Choisir ce plan</a>
+      </div>
+
+      <div class="pricing-card">
+        <div class="pricing-tier">Échos Éternel</div>
+        <div class="pricing-price"><sup>€</sup>199</div>
+        <span class="pricing-period">paiement unique · à vie</span>
+        <div class="pricing-divider"></div>
+        <ul class="pricing-features">
+          <li>Accès à vie complet</li>
+          <li>Toutes les futures fonctions</li>
+          <li>Clonage vocal (bientôt)</li>
+          <li>Accès famille inclus</li>
+          <li>Archive perpétuelle</li>
+        </ul>
+        <a href="https://buy.stripe.com/test_fZuaEY4GHcEWbDY7946Zy03" target="_blank" class="pricing-cta">Choisir ce plan</a>
+<section id="cta-final">
+  <h2 class="cta-final-title">Il n'est jamais trop tard<br>pour <em>leur dire au revoir.</em></h2>
+  <p class="cta-final-sub">Rejoignez les premières familles qui ont retrouvé une présence.</p>
+  <div class="cta-final-form waitlist-form">
+    <input type="email" class="waitlist-input" id="footer-email" placeholder="Votre adresse e-mail…">
+    <button class="waitlist-btn" onclick="joinWaitlist('footer-email', 'success-footer')">Rejoindre</button>
+  </div>
+  <div id="success-footer" style="display:none; font-family:'EB Garamond',serif; font-style:italic; color:var(--gold); font-size:0.95rem; margin-top:0.6rem; animation: riseIn 0.6s ease forwards;">
+    ✦ Vous êtes sur la liste. Nous vous écrirons bientôt.
+  </div>
+</section>
+
+<!-- ═══════════════════ FOOTER ═══════════════════ -->
+<footer>
+  <div class="footer-logo">Échos</div>
+  <p class="footer-tagline">« La mort n'est rien, je suis seulement passé dans la pièce d'à côté. »</p>
+  <ul class="footer-links">
+    <li><a href="#">Confidentialité</a></li>
+    <li><a href="#">Mentions légales</a></li>
+    <li><a href="#">Contact</a></li>
+  </ul>
+</footer>
+
+<script>
+// ══════════════ CURSOR ══════════════
+const cursor     = document.getElementById('cursor');
+const cursorRing = document.getElementById('cursor-ring');
+let mx = 0, my = 0, rx = 0, ry = 0;
+
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  cursor.style.left = mx + 'px';
+  cursor.style.top  = my + 'px';
+});
+
+function animRing() {
+  rx += (mx - rx) * 0.12;
+  ry += (my - ry) * 0.12;
+  cursorRing.style.left = rx + 'px';
+  cursorRing.style.top  = ry + 'px';
+  requestAnimationFrame(animRing);
+}
+animRing();
+
+document.querySelectorAll('a, button, input').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    cursor.style.width = '14px'; cursor.style.height = '14px';
+    cursorRing.style.width = '48px'; cursorRing.style.height = '48px';
+  });
+  el.addEventListener('mouseleave', () => {
+    cursor.style.width = '8px'; cursor.style.height = '8px';
+    cursorRing.style.width = '32px'; cursorRing.style.height = '32px';
+  });
+});
+
+// ══════════════ PARTICLES ══════════════
+const canvas  = document.getElementById('canvas');
+const ctx     = canvas.getContext('2d');
+let W = canvas.width  = window.innerWidth;
+let H = canvas.height = window.innerHeight;
+window.addEventListener('resize', () => {
+  W = canvas.width  = window.innerWidth;
+  H = canvas.height = window.innerHeight;
+});
+
+const particles = Array.from({ length: 90 }, () => ({
+  x: Math.random() * W,
+  y: Math.random() * H,
+  r: Math.random() * 1.2 + 0.2,
+  vx: (Math.random() - 0.5) * 0.15,
+  vy: -Math.random() * 0.25 - 0.05,
+  alpha: Math.random() * 0.5 + 0.1,
+  gold: Math.random() > 0.7
+}));
+
+function drawParticles() {
+  ctx.clearRect(0, 0, W, H);
+  particles.forEach(p => {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = p.gold
+      ? `rgba(200,169,109,${p.alpha})`
+      : `rgba(237,231,217,${p.alpha * 0.5})`;
+    ctx.fill();
+    p.x += p.vx; p.y += p.vy;
+    if (p.y < -5) { p.y = H + 5; p.x = Math.random() * W; }
+    if (p.x < -5) p.x = W + 5;
+    if (p.x > W + 5) p.x = -5;
+  });
+  requestAnimationFrame(drawParticles);
+}
+drawParticles();
+
+// ══════════════ SCROLL REVEAL ══════════════
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((e, i) => {
+    if (e.isIntersecting) {
+      setTimeout(() => e.target.classList.add('visible'), i * 120);
+    }
+  });
+}, { threshold: 0.15 });
+
+document.querySelectorAll('.step, .feature-card, .testimonial, .pricing-card').forEach(el => {
+  observer.observe(el);
+});
+
+// ══════════════ COUNTER ANIMATION ══════════════
+const counterObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const el     = entry.target;
+      const target = parseInt(el.dataset.target);
+      let current  = 0;
+      const step   = Math.ceil(target / 50);
+      const timer  = setInterval(() => {
+        current = Math.min(current + step, target);
+        el.textContent = current.toLocaleString('fr-FR');
+        if (current >= target) clearInterval(timer);
+      }, 30);
+      counterObserver.unobserve(el);
+    }
+  });
+}, { threshold: 0.5 });
+
+document.querySelectorAll('[data-target]').forEach(el => counterObserver.observe(el));
+
+// ══════════════ PHONE ANIMATION ══════════════
+setTimeout(() => {
+  const reply = document.getElementById('soul-reply');
+  if (reply) {
+    reply.style.display = 'block';
+    reply.style.opacity = '0';
+    reply.style.animation = 'riseIn 0.8s ease forwards';
+  }
+}, 2200);
+
+// ══════════════ APP OVERLAY ══════════════
+function ouvrirApp() {
+  document.getElementById('app-overlay').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function fermerApp() {
+  document.getElementById('app-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+// ══════════════ WAITLIST ══════════════
+function joinWaitlist(inputId, successId) {
+  const email = document.getElementById(inputId).value.trim();
+  if (!email || !email.includes('@')) {
+    document.getElementById(inputId).style.borderColor = 'rgba(200,100,100,0.5)';
+    setTimeout(() => document.getElementById(inputId).style.borderColor = '', 1500);
+    return;
+  }
+  // Redirige vers Tally avec l'email pré-rempli
+  window.open('https://tally.so/r/jaJ6dJ?email=' + encodeURIComponent(email), '_blank');
+  document.getElementById(inputId).value = '';
+  document.getElementById(successId).style.display = 'block';
+}
+</script>
+</body>
+</html>
+
+<!-- ═══════════ APP OVERLAY INLINE ═══════════ -->
+<style>
+#app-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #0a0a0f;
+  flex-direction: column;
+  overflow: hidden;
+}
+#app-overlay.open { display: flex; }
+#app-close-btn {
+  position: fixed;
+  top: 0.8rem; left: 0.8rem;
+  background: rgba(201,169,110,0.1);
+  border: 1px solid rgba(201,169,110,0.3);
+  color: #c9a96e;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+  border-radius: 1px;
+  z-index: 10000;
+}
+#app-inner {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Lato:wght@300;400&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --border: rgba(255,255,255,0.07);
+    --gold: #c9a96e;
+    --gold-dim: rgba(201,169,110,0.15);
+    --gold-glow: rgba(201,169,110,0.05);
+    --text: #e8e0d0;
+    --text-dim: rgba(232,224,208,0.45);
+    --user-bubble: rgba(201,169,110,0.08);
+    --soul-bubble: rgba(255,255,255,0.03);
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Lato', sans-serif;
+    font-weight: 300;
+    overflow: hidden;
+  }
+
+  /* ── Starfield ── */
+  #stars {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background: 
+      radial-gradient(ellipse 60% 40% at 50% 0%, rgba(201,169,110,0.04) 0%, transparent 70%),
+      radial-gradient(ellipse 80% 60% at 80% 100%, rgba(100,80,160,0.05) 0%, transparent 60%);
+  }
+  #stars::before, #stars::after {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 15% 20%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 35% 45%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 55% 15%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 75% 60%, rgba(255,255,255,0.2) 0%, transparent 100%),
+      radial-gradient(1px 1px at 90% 30%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 10% 75%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 60% 85%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 25% 60%, rgba(201,169,110,0.6) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 82% 10%, rgba(201,169,110,0.4) 0%, transparent 100%);
+  }
+
+  /* ── Layout ── */
+  #app {
+    position: relative; z-index: 1;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ── SCREEN: Setup ── */
+  #setup-screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    width: 100%;
+    max-width: 560px;
+    margin: 0 auto;
+    animation: fadeIn 1.2s ease;
+  }
+
+  .logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.8rem, 6vw, 4rem);
+    font-weight: 300;
+    letter-spacing: 0.25em;
+    color: var(--gold);
+    text-align: center;
+    margin-bottom: 0.3rem;
+  }
+  .logo-sub {
+    font-family: 'Lato', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+
+  .divider {
+    width: 60px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    margin: 0 auto 2.5rem;
+  }
+
+  .field-group {
+    width: 100%;
+    margin-bottom: 1.4rem;
+  }
+  label {
+    display: block;
+    font-size: 0.68rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 0.5rem;
+  }
+  input, textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    color: var(--text);
+    font-family: 'Lato', sans-serif;
+    font-weight: 300;
+    font-size: 0.95rem;
+    padding: 0.75rem 1rem;
+    outline: none;
+    transition: border-color 0.3s;
+    resize: none;
+  }
+  input:focus, textarea:focus {
+    border-color: rgba(201,169,110,0.4);
+    background: rgba(201,169,110,0.03);
+  }
+  input::placeholder, textarea::placeholder { color: var(--text-dim); }
+
+  .audio-upload-area {
+    width: 100%;
+    border: 1px dashed var(--border);
+    border-radius: 2px;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    background: var(--surface);
+  }
+  .audio-upload-area:hover { border-color: rgba(201,169,110,0.3); background: var(--gold-glow); }
+  .audio-upload-area input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .upload-icon { font-size: 1.4rem; margin-bottom: 0.4rem; }
+  .upload-label { font-size: 0.78rem; color: var(--text-dim); }
+  .upload-label span { color: var(--gold); }
+  #audio-file-name { font-size: 0.75rem; color: var(--gold); margin-top: 0.4rem; display: none; }
+
+  /* ── Media upload (photo/video) ── */
+  .media-upload-area {
+    width: 100%;
+    border: 1px dashed var(--border);
+    border-radius: 2px;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    background: var(--surface);
+  }
+  .media-upload-area:hover { border-color: rgba(201,169,110,0.3); background: var(--gold-glow); }
+  .media-upload-area input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  #media-file-name { font-size: 0.75rem; color: var(--gold); margin-top: 0.4rem; display: none; }
+  .media-preview-thumb {
+    width: 100%; max-height: 120px; object-fit: cover;
+    border-radius: 2px; margin-top: 0.8rem; display: none;
+    border: 1px solid var(--border);
+  }
+
+  .audio-preview {
+    width: 100%;
+    margin-top: 0.8rem;
+    display: none;
+  }
+  .audio-preview audio {
+    width: 100%;
+    filter: invert(1) sepia(1) saturate(0.3) hue-rotate(10deg);
+    border-radius: 2px;
+  }
+
+  .btn-begin {
+    width: 100%;
+    margin-top: 1rem;
+    padding: 0.9rem;
+    background: transparent;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    font-family: 'Lato', sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.35s;
+    border-radius: 1px;
+  }
+  .btn-begin:hover { background: var(--gold-dim); }
+  .btn-begin:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* ── Background media ── */
+  #bg-media-container {
+    position: fixed; inset: 0; z-index: 0;
+    pointer-events: none;
+    display: none;
+  }
+  #bg-media-container.visible { display: block; }
+  #bg-photo {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    filter: brightness(0.22) blur(2px) saturate(0.6);
+  }
+  #bg-video {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    filter: brightness(0.18) blur(3px) saturate(0.5);
+  }
+  .bg-vignette {
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 10%, rgba(10,10,15,0.85) 80%);
+  }
+
+  /* Portrait inset — visible dans le chat */
+  #portrait-panel {
+    display: none;
+    position: absolute;
+    bottom: 100px; right: 1.5rem;
+    width: 110px;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    z-index: 10;
+    pointer-events: none;
+    animation: fadeIn 1s ease;
+  }
+  #portrait-panel.visible { display: flex; }
+  #portrait-img {
+    width: 110px; height: 110px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1.5px solid rgba(201,169,110,0.4);
+    box-shadow: 0 0 30px rgba(201,169,110,0.12);
+    filter: brightness(0.9) sepia(0.15);
+  }
+  #portrait-video {
+    width: 110px; height: 110px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1.5px solid rgba(201,169,110,0.4);
+    box-shadow: 0 0 30px rgba(201,169,110,0.12);
+    filter: brightness(0.85) sepia(0.2) saturate(0.8);
+  }
+  .portrait-name-label {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    text-align: center;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── SCREEN: Chat ── */
+  #chat-screen {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    height: 100vh;
+    max-width: 700px;
+    margin: 0 auto;
+    animation: fadeIn 0.8s ease;
+    position: relative;
+    z-index: 2;
+  }
+
+  .chat-header {
+    padding: 1.2rem 1.5rem 1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-shrink: 0;
+    backdrop-filter: blur(12px);
+    background: rgba(10,10,15,0.6);
+  }
+  .soul-avatar {
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    border: 1px solid rgba(201,169,110,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.2rem;
+    color: var(--gold);
+    background: radial-gradient(circle at 40% 40%, rgba(201,169,110,0.1), transparent);
+    flex-shrink: 0;
+    position: relative;
+  }
+  .soul-avatar::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 1px solid rgba(201,169,110,0.1);
+    animation: pulse-ring 3s ease-in-out infinite;
+  }
+  @keyframes pulse-ring {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0; }
+  }
+  .soul-info { flex: 1; }
+  .soul-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.15rem;
+    font-weight: 400;
+    color: var(--text);
+    letter-spacing: 0.05em;
+  }
+  .soul-status {
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 1px;
+  }
+  .soul-status span { color: var(--gold); }
+
+  .btn-reset {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.4rem 0.6rem;
+    transition: color 0.2s;
+  }
+  .btn-reset:hover { color: var(--gold); }
+
+  /* ── Messages ── */
+  #messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(201,169,110,0.2) transparent;
+  }
+  #messages::-webkit-scrollbar { width: 3px; }
+  #messages::-webkit-scrollbar-track { background: transparent; }
+  #messages::-webkit-scrollbar-thumb { background: rgba(201,169,110,0.2); border-radius: 2px; }
+
+  .msg {
+    display: flex;
+    flex-direction: column;
+    max-width: 82%;
+    animation: msgIn 0.4s ease;
+  }
+  @keyframes msgIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .msg.user { align-self: flex-end; align-items: flex-end; }
+  .msg.soul  { align-self: flex-start; align-items: flex-start; }
+
+  .bubble {
+    padding: 0.75rem 1rem;
+    border-radius: 2px;
+    line-height: 1.65;
+    font-size: 0.92rem;
+  }
+  .msg.user .bubble {
+    background: var(--user-bubble);
+    border: 1px solid rgba(201,169,110,0.15);
+    color: var(--text);
+  }
+  .msg.soul .bubble {
+    background: var(--soul-bubble);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.05rem;
+    font-style: italic;
+    font-weight: 300;
+  }
+  .msg-time {
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    margin-top: 0.3rem;
+    padding: 0 0.2rem;
+  }
+
+  /* Typing indicator */
+  .typing-dots {
+    display: flex; gap: 5px; padding: 0.8rem 1rem;
+    background: var(--soul-bubble);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    width: fit-content;
+    align-self: flex-start;
+  }
+  .typing-dots span {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--gold);
+    opacity: 0.5;
+    animation: dot-pulse 1.4s ease-in-out infinite;
+  }
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes dot-pulse {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.3; }
+    30% { transform: translateY(-4px); opacity: 1; }
+  }
+
+  /* ── Intro message ── */
+  .intro-msg {
+    text-align: center;
+    padding: 1.5rem 1rem;
+    color: var(--text-dim);
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0.5rem;
+  }
+  .intro-msg strong { color: var(--gold); font-style: normal; font-weight: 400; }
+
+  /* ── Input area ── */
+  .chat-input-area {
+    padding: 1rem 1.2rem 1.2rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 0.8rem;
+    align-items: flex-end;
+    flex-shrink: 0;
+    backdrop-filter: blur(12px);
+    background: rgba(10,10,15,0.6);
+  }
+  #chat-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    color: var(--text);
+    font-family: 'Lato', sans-serif;
+    font-weight: 300;
+    font-size: 0.9rem;
+    padding: 0.7rem 1rem;
+    outline: none;
+    resize: none;
+    max-height: 120px;
+    overflow-y: auto;
+    transition: border-color 0.2s;
+    line-height: 1.5;
+  }
+  #chat-input:focus { border-color: rgba(201,169,110,0.3); }
+  #chat-input::placeholder { color: var(--text-dim); }
+
+  .btn-send {
+    background: transparent;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    width: 40px; height: 40px;
+    border-radius: 2px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.25s;
+    flex-shrink: 0;
+  }
+  .btn-send:hover { background: var(--gold-dim); }
+  .btn-send:disabled { opacity: 0.3; cursor: not-allowed; }
+  .btn-send svg { width: 16px; height: 16px; }
+
+  /* ── Audio mini-player ── */
+  .audio-bar {
+    display: none;
+    padding: 0.5rem 1.2rem;
+    background: rgba(201,169,110,0.04);
+    border-top: 1px solid var(--border);
+    align-items: center;
+    gap: 0.8rem;
+    flex-shrink: 0;
+  }
+  .audio-bar.visible { display: flex; }
+  .audio-label {
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+  .audio-bar audio { flex: 1; height: 28px; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Mobile ── */
+  @media (max-width: 480px) {
+    .msg { max-width: 92%; }
+    #setup-screen { padding: 1.5rem 1rem; }
+  }
+</style>
+</style>
+
+<div id="app-overlay">
+  <button id="app-close-btn" onclick="fermerApp()">← Retour</button>
+  <div id="app-inner" style="flex:1;overflow-y:auto;height:calc(100vh - 50px);">
+  <div class="divider"></div>
+
+  <div class="field-group">
+    <label class="field-label">Nom de la personne</label>
+    <input type="text" id="person-name" placeholder="Ex : Grand-père Henri" maxlength="60">
+  </div>
+
+  <div class="field-group">
+    <label class="field-label">Qui était cette personne ?</label>
+    <textarea id="person-bio" rows="3" placeholder="Sa personnalité, ses expressions, ses passions, comment il/elle vous parlait…"></textarea>
+  </div>
+
+  <div class="field-group">
+    <label class="field-label">Photo ou vidéo (optionnel)</label>
+    <div class="upload-area">
+      <input type="file" id="media-file" accept="image/*,video/*">
+      <div class="upload-area-text">🖼️ Photo ou vidéo · <span>Parcourir</span></div>
+      <div class="file-name" id="media-file-name"></div>
+    </div>
+    <img id="media-preview-img" class="img-preview" alt="">
+  </div>
+
+  <div class="field-group">
+    <label class="field-label">Voix / Enregistrement (optionnel)</label>
+    <div class="upload-area">
+      <input type="file" id="audio-file" accept="audio/*">
+      <div class="upload-area-text">🎵 Enregistrement audio · <span>Parcourir</span></div>
+      <div class="file-name" id="audio-file-name"></div>
+    </div>
+  </div>
+
+  <div class="consent-block">
+    <div class="consent-item">
+      <input type="checkbox" id="c1" onchange="validateSetup()">
+      <label for="c1">Je certifie être un proche autorisé à utiliser les données et photos de cette personne</label>
+    </div>
+    <div class="consent-item">
+      <input type="checkbox" id="c2" onchange="validateSetup()">
+      <label for="c2">Je comprends que les réponses sont générées par une intelligence artificielle</label>
+    </div>
+    <div class="consent-item">
+      <input type="checkbox" id="c3" onchange="validateSetup()">
+      <label for="c3">J'accepte les <a href="#" onclick="ouvrirLegal();return false;">CGU et Politique de Confidentialité</a></label>
+    </div>
+  </div>
+
+  <button class="btn-begin" id="btn-begin" disabled onclick="beginChat()">
+    Ouvrir la connexion
+  </button>
+</div>
+
+<!-- ══ CHAT ══ -->
+<div id="chat-screen">
+  <div class="chat-header">
+    <div class="soul-avatar" id="soul-avatar">?</div>
+    <div class="soul-info">
+      <div class="soul-name" id="soul-name-display">—</div>
+      <div class="soul-status"><span>●</span> Présence active</div>
+    </div>
+    <button class="btn-reset" onclick="resetApp()">← Retour</button>
+  </div>
+  <div class="audio-bar" id="audio-bar">
+    <div class="audio-label">🎵 Sa voix</div>
+    <audio id="chat-audio" controls></audio>
+  </div>
+  <div id="messages">
+    <div class="intro-msg" id="intro-msg"></div>
+  </div>
+  <div id="portrait-panel">
+    <img id="portrait-img" src="" alt="">
+    <video id="portrait-video" autoplay muted loop playsinline></video>
+    <div class="portrait-name-label" id="portrait-label"></div>
+  </div>
+  <div class="chat-input-area">
+    <textarea id="chat-input" rows="1" placeholder="Écrivez votre message…" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    <button class="btn-send" id="btn-send" onclick="sendMessage()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<!-- ══ LEGAL ══ -->
+<div id="legal-overlay">
+  <button id="legal-close" onclick="fermerLegal()">✕ Fermer</button>
+  <span class="legal-logo">Échos</span>
+  <span class="legal-sub">Mentions légales · CGU · Confidentialité</span>
+
+  <h1>Conditions Générales d'Utilisation</h1>
+  <h2>Objet et acceptation</h2>
+  <p>Les présentes CGU régissent l'utilisation de la plateforme Échos. En utilisant le Service, vous acceptez ces conditions.</p>
+  <div class="hl"><p>⚠️ Échos est basé sur l'IA. Les réponses ne proviennent pas de la personne décédée mais d'un système d'intelligence artificielle (AI Act UE 2024/1689 — risque limité).</p></div>
+  <h2>Consentements obligatoires</h2>
+  <p>L'utilisateur certifie être un proche autorisé, détenir les droits sur les contenus uploadés, et comprendre qu'il interagit avec une IA.</p>
+  <h2>Droits à l'image</h2>
+  <div class="hl"><p>⚠️ Conformément aux articles 9 du Code civil et L.226-1 du Code pénal, le droit à l'image persiste après le décès. L'upload de photos engage la responsabilité exclusive de l'utilisateur.</p></div>
+  <h2>Abonnements et résiliation</h2>
+  <ul>
+    <li>Plan Gratuit : 1 profil, 10 messages/mois</li>
+    <li>Échos Intime : 9,99 €/mois — résiliation à tout moment</li>
+    <li>Échos Famille : 19,99 €/mois — résiliation à tout moment</li>
+    <li>Échos Éternel : 199 € paiement unique</li>
+  </ul>
+  <p>Droit de rétractation : 14 jours (art. L.221-18 Code de la consommation). Résiliation : contact@echos.app</p>
+  <h2>Limitation de responsabilité</h2>
+  <p>Échos ne se substitue pas à un accompagnement psychologique professionnel.</p>
+
+  <h1>Politique de Confidentialité</h1>
+  <div class="hl"><p>⚠️ Conformément à la Loi Informatique et Libertés et à l'arrêt CJUE C-252/23 (mars 2024), vos données et celles du défunt ne sont jamais cédées à des tiers ni utilisées pour entraîner des modèles d'IA.</p></div>
+  <h2>Vos droits (RGPD)</h2>
+  <ul>
+    <li>Accès, rectification, effacement (droit à l'oubli)</li>
+    <li>Portabilité et opposition</li>
+    <li>Suppression complète sur simple demande</li>
+  </ul>
+  <p>Contact : contact@echos.app · CNIL : <a href="https://www.cnil.fr">www.cnil.fr</a></p>
+
+  <h1>Mentions Légales</h1>
+  <p>Service Échos · contact@echos.app<br>Hébergeur : Netlify, Inc. — San Francisco, CA, USA</p>
+  <p style="text-align:center;margin-top:2rem;font-size:.78rem;color:rgba(237,231,217,.25)">« La mort n'est rien. Je suis seulement passé dans la pièce d'à côté. »</p>
+</div>
+
+<script>
+const nameInput = document.getElementById('person-name');
+const bioInput  = document.getElementById('person-bio');
+const btnBegin  = document.getElementById('btn-begin');
+let personName='', personBio='', audioURL=null, mediaURL=null, mediaType=null, history=[], isLoading=false;
+
+function validateSetup(){
+  const ok = nameInput.value.trim() && bioInput.value.trim() &&
+    document.getElementById('c1').checked &&
+    document.getElementById('c2').checked &&
+    document.getElementById('c3').checked;
+  btnBegin.disabled = !ok;
+}
+nameInput.addEventListener('input', validateSetup);
+bioInput.addEventListener('input', validateSetup);
+
+document.getElementById('audio-file').addEventListener('change', e=>{
+  const f=e.target.files[0]; if(!f) return;
+  audioURL=URL.createObjectURL(f);
+  const n=document.getElementById('audio-file-name');
+  n.textContent=f.name; n.style.display='block';
+});
+
+document.getElementById('media-file').addEventListener('change', e=>{
+  const f=e.target.files[0]; if(!f) return;
+  mediaURL=URL.createObjectURL(f);
+  mediaType=f.type.startsWith('video')?'video':'image';
+  const n=document.getElementById('media-file-name');
+  n.textContent=f.name; n.style.display='block';
+  if(mediaType==='image'){
+    const img=document.getElementById('media-preview-img');
+    img.src=mediaURL; img.style.display='block';
+  }
+});
+
+function beginChat(){
+  personName=nameInput.value.trim();
+  personBio=bioInput.value.trim();
+  history=[];
+  document.getElementById('setup-screen').style.display='none';
+  const cs=document.getElementById('chat-screen'); cs.style.display='flex';
+  document.getElementById('soul-avatar').textContent=personName.charAt(0).toUpperCase();
+  document.getElementById('soul-name-display').textContent=personName;
+  document.getElementById('intro-msg').innerHTML=`La connexion avec <strong>${esc(personName)}</strong> est établie.<br>Parlez-lui comme vous le feriez de son vivant.`;
+
+  if(mediaURL){
+    const bgc=document.getElementById('bg-media-container');
+    bgc.classList.add('visible');
+    const pp=document.getElementById('portrait-panel');
+    pp.classList.add('visible');
+    document.getElementById('portrait-label').textContent=personName;
+    if(mediaType==='image'){
+      document.getElementById('bg-photo').src=mediaURL;
+      document.getElementById('bg-photo').style.display='block';
+      document.getElementById('bg-video').style.display='none';
+      document.getElementById('portrait-img').src=mediaURL;
+      document.getElementById('portrait-img').style.display='block';
+      document.getElementById('portrait-video').style.display='none';
+    } else {
+      document.getElementById('bg-video').src=mediaURL;
+      document.getElementById('bg-video').style.display='block';
+      document.getElementById('bg-photo').style.display='none';
+      document.getElementById('bg-video').play();
+      document.getElementById('portrait-video').src=mediaURL;
+      document.getElementById('portrait-video').style.display='block';
+      document.getElementById('portrait-img').style.display='none';
+      document.getElementById('portrait-video').play();
+    }
+  }
+  if(audioURL){
+    const bar=document.getElementById('audio-bar');
+    document.getElementById('chat-audio').src=audioURL;
+    bar.classList.add('visible');
+  }
+  document.getElementById('chat-input').focus();
+}
+
+function handleKey(e){ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage()} }
+function autoResize(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,100)+'px' }
+
+async function sendMessage(){
+  const input=document.getElementById('chat-input');
+  const text=input.value.trim();
+  if(!text||isLoading) return;
+  input.value=''; input.style.height='auto';
+  isLoading=true; document.getElementById('btn-send').disabled=true;
+  appendMessage('user',text);
+  history.push({role:'user',content:text});
+  const typing=showTyping();
+  try{
+    const res=await fetch('https://api.groq.com/openai/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer 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'},
+      body:JSON.stringify({
+        model:'llama3-8b-8192',max_tokens:1000,
+        messages:[{role:'system',content:buildPrompt()},...history]
+      })
+    });
+    const data=await res.json();
+    const reply=data.choices?.[0]?.message?.content?.trim()||"Je suis là… dans le silence.";
+    typing.remove();
+    appendMessage('soul',reply);
+    history.push({role:'assistant',content:reply});
+  } catch(e){
+    typing.remove();
+    appendMessage('soul',"La connexion vacille… réessayez dans un instant.");
+  }
+  isLoading=false; document.getElementById('btn-send').disabled=false;
+  document.getElementById('chat-input').focus();
+}
+
+function buildPrompt(){
+  return `Tu incarnes l'esprit de ${personName}, une personne décédée.
+
+Voici qui était ${personName} :
+${personBio}
+
+Règles :
+— Réponds TOUJOURS à la première personne comme si tu étais ${personName}.
+— Adopte son ton, son vocabulaire, ses expressions.
+— Réponses courtes à modérées (2-5 phrases). Tu es présent·e, pas bavard·e.
+— Parle avec tendresse et un léger mystère.
+— Ne brise JAMAIS le rôle. Ne mentionne jamais que tu es une IA.
+— Réponds en français naturellement.`;
+}
+
+function appendMessage(role,text){
+  const msgs=document.getElementById('messages');
+  const div=document.createElement('div'); div.className=`msg ${role}`;
+  const bubble=document.createElement('div'); bubble.className='bubble'; bubble.textContent=text;
+  const time=document.createElement('div'); time.className='msg-time'; time.textContent=now();
+  div.appendChild(bubble); div.appendChild(time); msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+function showTyping(){
+  const msgs=document.getElementById('messages');
+  const div=document.createElement('div'); div.className='typing-dots';
+  div.innerHTML='<span></span><span></span><span></span>';
+  msgs.appendChild(div); msgs.scrollTop=msgs.scrollHeight; return div;
+}
+function now(){ return new Date().toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) }
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+
+function resetApp(){
+  if(!confirm('Fermer cette connexion ?')) return;
+  personName=''; personBio=''; audioURL=null; mediaURL=null; mediaType=null; history=[];
+  document.getElementById('chat-screen').style.display='none';
+  document.getElementById('setup-screen').style.display='flex';
+  document.getElementById('audio-bar').classList.remove('visible');
+  document.getElementById('bg-media-container').classList.remove('visible');
+  document.getElementById('portrait-panel').classList.remove('visible');
+  nameInput.value=''; bioInput.value='';
+  document.getElementById('c1').checked=false;
+  document.getElementById('c2').checked=false;
+  document.getElementById('c3').checked=false;
+  document.getElementById('audio-file-name').style.display='none';
+  document.getElementById('media-file-name').style.display='none';
+  document.getElementById('media-preview-img').style.display='none';
+  </div>
+</div>
+
+</body>
+</html>
